@@ -7,6 +7,7 @@ import com.example.onmyojiguess.model.FeedData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
@@ -26,6 +27,10 @@ public class DsFeedClient {
     private static final String FEED_PATH = "/v1/web/feed/basic/getSomeOneFeeds";
     private static final String FEED_TYPES = "1,2,3,4,6,7,10,11";
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+    /** 网络异常最大重试次数 */
+    private static final int MAX_RETRIES = 3;
+    /** 重试间隔基数(毫秒), 实际间隔 = 基数 * 重试轮数 */
+    private static final long RETRY_BACKOFF_MS = 2000;
 
     private final RestClient restClient;
     private final GuessParser guessParser;
@@ -45,10 +50,7 @@ public class DsFeedClient {
      * 抓取指定用户的最新动态并解析竞猜信息
      */
     public List<FeedData> fetchFeeds(String userName, String uid) {
-        String body = restClient.get()
-                .uri(FEED_PATH + "?feedTypes=" + FEED_TYPES + "&someOneUid={uid}", uid)
-                .retrieve()
-                .body(String.class);
+        String body = fetchFeedBodyWithRetry(userName, uid);
 
         JSONObject root = JSON.parseObject(body);
         if (root == null || root.getIntValue("code") != 200) {
@@ -87,6 +89,38 @@ public class DsFeedClient {
                 list.stream().filter(f -> Boolean.TRUE.equals(f.getIsGuess())).count(),
                 list.stream().filter(f -> f.getIsGuess() == null).count());
         return list;
+    }
+
+    /**
+     * 请求动态接口, 网络异常(连接超时/IO错误)时自动重试
+     */
+    private String fetchFeedBodyWithRetry(String userName, String uid) {
+        ResourceAccessException lastException = null;
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return restClient.get()
+                        .uri(FEED_PATH + "?feedTypes=" + FEED_TYPES + "&someOneUid={uid}", uid)
+                        .retrieve()
+                        .body(String.class);
+            } catch (ResourceAccessException e) {
+                lastException = e;
+                log.warn("[{}] 请求失败(第 {}/{} 次), uid={}, err={}",
+                        userName, attempt, MAX_RETRIES, uid, e.getMessage());
+                if (attempt < MAX_RETRIES) {
+                    sleepQuietly(RETRY_BACKOFF_MS * attempt);
+                }
+            }
+        }
+        log.error("[{}] 请求重试 {} 次仍失败, uid={}", userName, MAX_RETRIES, uid, lastException);
+        return null;
+    }
+
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private FeedData convert(String userName, String uid, JSONObject feed) {
