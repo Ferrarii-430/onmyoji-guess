@@ -42,6 +42,8 @@ public record CurrentGuessResponse(
      * @param source      POST=动态原文解析 AI=模型判定
      * @param judgeTime   竞猜入库时间
      * @param win         竞猜结果: true=中 false=未中 null=尚无赛果
+     * @param content     来源动态正文 (竞猜相关 content)
+     * @param postTime    来源动态发布时间
      */
     public record UserBet(
             String userName,
@@ -50,7 +52,9 @@ public record CurrentGuessResponse(
             String rawLine,
             String source,
             String judgeTime,
-            Boolean win) {
+            Boolean win,
+            String content,
+            String postTime) {
     }
 
     /**
