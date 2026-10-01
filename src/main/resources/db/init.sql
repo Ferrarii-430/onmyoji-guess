@@ -81,3 +81,30 @@ CREATE TABLE IF NOT EXISTS round_result
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '对局赛果(胜方)';
+
+-- -----------------------------------------------------
+-- 4. 对局式神数据表 (游戏画面 OCR 采集, 同局重复上报按最后一次覆盖)
+--    所有属性值按 OCR 原样字符串保存, 不做数值转换
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS guess_shikigami
+(
+    id            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '自增主键',
+    round_date    VARCHAR(10) NOT NULL COMMENT '场次日期 yyyy-MM-dd',
+    round_no      INT         NOT NULL COMMENT '场次序号 1~7',
+    side          VARCHAR(4)  NOT NULL COMMENT 'RED=红方(左) BLUE=蓝方(右)',
+    no            INT         NOT NULL COMMENT '座位序号 1~5',
+    name          VARCHAR(64) NOT NULL DEFAULT '' COMMENT '式神名称',
+    attack        VARCHAR(64) NOT NULL DEFAULT '' COMMENT '攻击',
+    hp            VARCHAR(64) NOT NULL DEFAULT '' COMMENT '生命',
+    defense       VARCHAR(64) NOT NULL DEFAULT '' COMMENT '防御',
+    speed         VARCHAR(64) NOT NULL DEFAULT '' COMMENT '速度',
+    crit_rate     VARCHAR(64) NOT NULL DEFAULT '' COMMENT '暴击 (含百分号)',
+    crit_damage   VARCHAR(64) NOT NULL DEFAULT '' COMMENT '暴击伤害 (含百分号)',
+    effect_hit    VARCHAR(64) NOT NULL DEFAULT '' COMMENT '命中效果 (含百分号)',
+    effect_resist VARCHAR(64) NOT NULL DEFAULT '' COMMENT '效果抵抗 (含百分号)',
+    mitama        VARCHAR(64) NOT NULL DEFAULT '' COMMENT '御魂名称',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_round_side_no (round_date, round_no, side, no)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '对局式神数据(OCR采集)';

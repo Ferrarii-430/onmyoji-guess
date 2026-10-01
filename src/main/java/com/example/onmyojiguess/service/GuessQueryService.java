@@ -88,21 +88,28 @@ public class GuessQueryService {
         cache = null;
     }
 
+    /**
+     * 当前对局标识: 10:00 前 = 昨日第7场; 其余按小时定位 (11 点仍属 10 点场)
+     */
+    public record RoundKey(LocalDate date, int roundNo) {
+    }
+
+    public RoundKey currentRoundKey() {
+        LocalDateTime now = LocalDateTime.now(ZONE);
+        if (now.toLocalTime().isBefore(LocalTime.of(10, 0))) {
+            return new RoundKey(now.toLocalDate().minusDays(1), 7);
+        }
+        return new RoundKey(now.toLocalDate(), Math.min(7, (now.getHour() - 10) / 2 + 1));
+    }
+
     private CurrentGuessResponse build() {
         // 当前对局: 10:00 前 = 昨日第7场; 其余按小时定位 (11 点仍属 10 点场)
-        LocalDateTime now = LocalDateTime.now(ZONE);
-        LocalDate date;
-        int roundNo;
-        if (now.toLocalTime().isBefore(LocalTime.of(10, 0))) {
-            date = now.toLocalDate().minusDays(1);
-            roundNo = 7;
-        } else {
-            date = now.toLocalDate();
-            roundNo = Math.min(7, (now.getHour() - 10) / 2 + 1);
-        }
+        RoundKey key = currentRoundKey();
+        LocalDate date = key.date();
+        int roundNo = key.roundNo();
         LocalDateTime roundStart = date.atTime(8 + 2 * roundNo, 0);
         LocalDateTime roundEnd = roundStart.plusHours(2);
-        String status = now.isBefore(roundEnd) ? "BETTING" : "FINISHED";
+        String status = LocalDateTime.now(ZONE).isBefore(roundEnd) ? "BETTING" : "FINISHED";
         String winSide = queryWinSide(date, roundNo);
 
         List<UserBet> bets = queryBets(date, roundNo, winSide);
