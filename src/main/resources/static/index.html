@@ -3,228 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>阴阳师对弈竞猜看板</title>
+<title>阴阳师对弈竞猜 · 当前对局式神</title>
 <style>
+  :root {
+    --bg: #14161d;
+    --card: #1d2029;
+    --border: #2c3040;
+    --text: #d8dbe4;
+    --muted: #7b8194;
+    --red: #e05a5a;
+    --blue: #4a8fe0;
+    --gold: #d8b25c;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: #f0f2f5; color: #1f2329; padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    padding: 20px;
   }
-  .container { max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 22px; text-align: center; margin-bottom: 4px; }
-  .subtitle { text-align: center; color: #8a9099; font-size: 12px; margin-bottom: 16px; }
-
-  /* 对局信息卡 */
-  .round-card {
-    background: linear-gradient(135deg, #1f2a44, #2c3e6b);
-    color: #fff; border-radius: 12px; padding: 18px 22px;
-    display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;
-    box-shadow: 0 2px 10px rgba(0,0,0,.12); margin-bottom: 16px;
+  .header { text-align: center; margin-bottom: 18px; }
+  .header h1 { font-size: 20px; color: var(--gold); letter-spacing: 2px; }
+  .round-info {
+    display: inline-flex; gap: 14px; margin-top: 10px; padding: 6px 18px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; color: var(--muted);
   }
-  .round-title { font-size: 20px; font-weight: 700; }
-  .round-meta { font-size: 13px; opacity: .85; margin-top: 4px; }
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 600; margin-left: 8px; vertical-align: 2px;
-  }
-  .badge-betting { background: #ffb020; color: #4d3200; }
-  .badge-finished { background: #91d300; color: #243300; }
-  .side-counts { display: flex; gap: 12px; align-items: center; }
-  .side-pill {
-    border-radius: 10px; padding: 10px 18px; text-align: center; min-width: 110px;
-  }
-  .side-pill .n { font-size: 26px; font-weight: 800; line-height: 1.1; }
-  .side-pill .t { font-size: 12px; opacity: .9; }
-  .side-red { background: rgba(255, 82, 82, .25); border: 1px solid rgba(255, 82, 82, .7); }
-  .side-blue { background: rgba(64, 158, 255, .25); border: 1px solid rgba(64, 158, 255, .7); }
-  .vs { font-size: 16px; font-weight: 700; opacity: .7; }
-  .win-line { width: 100%; font-size: 14px; padding-top: 4px; }
-  .win-line b { color: #ffd04b; }
-
-  /* 通用区块 */
-  .section { margin-bottom: 16px; }
-  .section h2 {
-    font-size: 15px; margin-bottom: 10px; padding-left: 10px;
-    border-left: 4px solid #409eff; color: #303133;
-  }
-  .card {
-    background: #fff; border-radius: 10px; padding: 14px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 10px;
-  }
-
-  /* 用户竞猜列表 */
-  .bet-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .bet-user { font-weight: 700; min-width: 110px; }
-  .side-tag {
-    display: inline-block; color: #fff; border-radius: 6px;
-    padding: 3px 12px; font-size: 13px; font-weight: 700;
-  }
-  .tag-red { background: #e64545; }
-  .tag-blue { background: #3a7fd5; }
-  .bet-raw { color: #8a9099; font-size: 12px; font-family: Consolas, monospace; }
-  .src-tag {
-    font-size: 11px; color: #8a9099; border: 1px solid #d8dce1;
-    border-radius: 4px; padding: 1px 6px;
-  }
-  .win-tag { margin-left: auto; font-size: 13px; font-weight: 700; }
-  .win-yes { color: #52c41a; }
-  .win-no { color: #e64545; }
-  .win-none { color: #b0b6bf; font-weight: 400; }
-  .empty { color: #b0b6bf; text-align: center; padding: 18px 0; font-size: 13px; }
-
-  /* 动态原文卡片 */
-  .content-head {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
-  }
-  .content-user { font-weight: 700; font-size: 14px; }
-  .content-time { color: #b0b6bf; font-size: 12px; }
-  .content-text {
-    white-space: pre-wrap; word-break: break-word; font-size: 13.5px;
-    line-height: 1.65; color: #303133; background: #fafbfc;
-    border-radius: 8px; padding: 10px 12px;
-  }
-  .content-text .hit-red { color: #e64545; font-weight: 800; }
-  .content-text .hit-blue { color: #3a7fd5; font-weight: 800; }
-
-  /* 胜率表 */
+  .round-info b { color: var(--text); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+  .side-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .side-title { padding: 10px 16px; font-size: 15px; font-weight: 600; border-bottom: 1px solid var(--border); }
+  .side-title.red { color: var(--red); border-left: 4px solid var(--red); }
+  .side-title.blue { color: var(--blue); border-left: 4px solid var(--blue); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #f0f2f5; }
-  th { color: #8a9099; font-weight: 500; font-size: 12px; }
-  tr:last-child td { border-bottom: none; }
-  .rate-bar {
-    background: #f0f2f5; border-radius: 6px; height: 8px; width: 130px;
-    display: inline-block; vertical-align: middle; margin-right: 8px; overflow: hidden;
-  }
-  .rate-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffb020, #52c41a); }
-  .rate-num { font-weight: 700; }
-
-  .refresh-info { text-align: center; color: #b0b6bf; font-size: 12px; margin-top: 6px; }
+  th, td { padding: 7px 10px; text-align: center; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; background: rgba(255,255,255,.03); }
+  td { border-top: 1px solid var(--border); }
+  td.name { font-weight: 600; min-width: 110px; }
+  .empty { padding: 26px; text-align: center; color: var(--muted); font-size: 14px; }
+  .footer { text-align: center; margin-top: 14px; font-size: 12px; color: var(--muted); }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>阴阳师对弈竞猜看板</h1>
-  <div class="subtitle">数据来源: 网易大神动态自动采集 · 每 30 秒自动刷新</div>
-
-  <div class="round-card" id="roundCard">
-    <div>
-      <div class="round-title" id="roundTitle">加载中…</div>
-      <div class="round-meta" id="roundMeta"></div>
-      <div class="win-line" id="winLine"></div>
-    </div>
-    <div class="side-counts">
-      <div class="side-pill side-red"><div class="n" id="redCount">-</div><div class="t">押 左(红)</div></div>
-      <div class="vs">VS</div>
-      <div class="side-pill side-blue"><div class="n" id="blueCount">-</div><div class="t">押 右(蓝)</div></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>当局用户竞猜</h2>
-    <div id="betList"><div class="empty">加载中…</div></div>
-  </div>
-
-  <div class="section">
-    <h2>当局竞猜动态原文</h2>
-    <div id="contentList"><div class="empty">加载中…</div></div>
-  </div>
-
-  <div class="section">
-    <h2>用户历史胜率（仅统计已出赛果的对局）</h2>
-    <div class="card" style="padding: 6px 16px;">
-      <table>
-        <thead><tr><th>用户</th><th>竞猜场次</th><th>猜中</th><th>胜率</th></tr></thead>
-        <tbody id="rateBody"><tr><td colspan="4" class="empty">暂无赛果数据</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="refresh-info" id="refreshInfo">最近刷新: -</div>
+<div class="header">
+  <h1>阴阳师对弈竞猜 · 当前对局式神</h1>
+  <div class="round-info" id="roundInfo">加载中...</div>
 </div>
+<div class="grid">
+  <div class="side-card">
+    <div class="side-title red">红方 (左)</div>
+    <div id="redBox"></div>
+  </div>
+  <div class="side-card">
+    <div class="side-title blue">蓝方 (右)</div>
+    <div id="blueBox"></div>
+  </div>
+</div>
+<div class="footer" id="footer"></div>
 
 <script>
-const SIDE_TEXT = { RED: '左(红)', BLUE: '右(蓝)' };
+const REFRESH_MS = 60000;
 
-function esc(s) {
-  return (s == null ? '' : '' + s).replace(/[&<>"']/g,
+function escapeHtml(s) {
+  return s == null ? '' : String(s).replace(/[&<>"']/g,
       c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* 动态正文中高亮命中行: "14:00 左(红)" 等 */
-function renderContent(text, side) {
-  let html = esc(text);
-  if (side) {
-    const sideText = SIDE_TEXT[side] || '';
-    const re = new RegExp('([^\\n]*' + sideText.replace(/[()（）]/g, '[$1]') + '[^\\n]*)');
-    const cls = side === 'RED' ? 'hit-red' : 'hit-blue';
-    html = html.replace(re, m => '<span class="' + cls + '">' + m + '</span>');
-  }
-  return html;
+function roundText(roundNo) {
+  const start = 8 + 2 * roundNo;
+  return `第${roundNo}场 · ${start}:00-${start + 2}:00`;
 }
 
-function render(d) {
-  const r = d.round || {};
-  document.getElementById('roundTitle').innerHTML =
-      esc(r.date) + ' 第' + esc(r.roundNo) + '场' +
-      ' <span class="badge ' + (r.status === 'BETTING' ? 'badge-betting' : 'badge-finished') + '">'
-      + (r.status === 'BETTING' ? '进行中' : '已结束') + '</span>';
-  document.getElementById('roundMeta').textContent =
-      (r.roundStart || '').replace('T', ' ').slice(0, 16) + ' ~ ' + (r.roundEnd || '').replace('T', ' ').slice(0, 16);
-  document.getElementById('winLine').innerHTML = r.winSide
-      ? '本局赛果: 胜方 <b>' + SIDE_TEXT[r.winSide] + '</b>'
-      : '本局赛果: <b>待定</b>';
-  document.getElementById('redCount').textContent = r.redCount ?? 0;
-  document.getElementById('blueCount').textContent = r.blueCount ?? 0;
-
-  const bets = d.bets || [];
-  document.getElementById('betList').innerHTML = bets.length === 0
-      ? '<div class="empty">当局暂无用户竞猜, 等待采集…</div>'
-      : bets.map(b => {
-          const winTag = b.win == null
-              ? '<span class="win-tag win-none">待定</span>'
-              : (b.win ? '<span class="win-tag win-yes">✔ 猜中</span>'
-                       : '<span class="win-tag win-no">✘ 未中</span>');
-          return '<div class="card bet-row">'
-              + '<span class="bet-user">' + esc(b.userName) + '</span>'
-              + '<span class="side-tag ' + (b.betSide === 'RED' ? 'tag-red' : 'tag-blue') + '">' + esc(b.betSideText) + '</span>'
-              + (b.rawLine ? '<span class="bet-raw">' + esc(b.rawLine) + '</span>' : '')
-              + '<span class="src-tag">' + (b.source === 'AI' ? 'AI 判定' : '原文解析') + '</span>'
-              + winTag + '</div>';
-        }).join('');
-
-  const withContent = bets.filter(b => b.content);
-  document.getElementById('contentList').innerHTML = withContent.length === 0
-      ? '<div class="empty">当局暂无竞猜动态原文</div>'
-      : withContent.map(b =>
-          '<div class="card">'
-          + '<div class="content-head"><span class="content-user">' + esc(b.userName) + '</span>'
-          + '<span class="content-time">' + esc((b.postTime || '').replace('T', ' ').slice(0, 19)) + '</span></div>'
-          + '<div class="content-text">' + renderContent(b.content, b.betSide) + '</div>'
-          + '</div>').join('');
-
-  const rates = d.userWinRates || [];
-  document.getElementById('rateBody').innerHTML = rates.length === 0
-      ? '<tr><td colspan="4" class="empty">暂无赛果数据</td></tr>'
-      : rates.map(u =>
-          '<tr><td>' + esc(u.userName) + '</td><td>' + u.total + '</td><td>' + u.win + '</td>'
-          + '<td><span class="rate-bar"><i style="width:' + Math.round(u.winRate * 100) + '%"></i></span>'
-          + '<span class="rate-num">' + (u.winRate * 100).toFixed(1) + '%</span></td></tr>').join('');
-
-  document.getElementById('refreshInfo').textContent = '最近刷新: ' + new Date().toLocaleTimeString('zh-CN');
+function sideTable(units) {
+  if (!units || units.length === 0) {
+    return '<div class="empty">暂无数据, 等待 OCR 上报</div>';
+  }
+  const rows = units.map(u => `
+    <tr>
+      <td>${u.no}</td>
+      <td class="name">${escapeHtml(u.name) || '-'}</td>
+      <td>${escapeHtml(u.attack)}</td>
+      <td>${escapeHtml(u.hp)}</td>
+      <td>${escapeHtml(u.defense)}</td>
+      <td>${escapeHtml(u.speed)}</td>
+      <td>${escapeHtml(u.critRate)}</td>
+      <td>${escapeHtml(u.critDamage)}</td>
+      <td>${escapeHtml(u.effectHit)}</td>
+      <td>${escapeHtml(u.effectResist)}</td>
+      <td>${escapeHtml(u.mitama) || '-'}</td>
+    </tr>`).join('');
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>座位</th><th>式神</th><th>攻击</th><th>生命</th><th>防御</th>
+          <th>速度</th><th>暴击</th><th>暴伤</th><th>命中</th><th>抵抗</th><th>御魂</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 async function load() {
   try {
-    const res = await fetch('/api/guess/current');
-    render(await res.json());
+    const res = await fetch('/api/guess/shikigami/current');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    document.getElementById('roundInfo').innerHTML =
+        `<span>日期 <b>${escapeHtml(data.roundDate)}</b></span>` +
+        `<span><b>${roundText(data.roundNo)}</b></span>`;
+    document.getElementById('redBox').innerHTML = sideTable(data.red);
+    document.getElementById('blueBox').innerHTML = sideTable(data.blue);
+    document.getElementById('footer').textContent =
+        `每 ${REFRESH_MS / 1000} 秒自动刷新 · 上次更新 ${new Date().toLocaleTimeString('zh-CN')}`;
   } catch (e) {
-    document.getElementById('refreshInfo').textContent = '刷新失败: ' + e.message;
+    document.getElementById('footer').textContent = '加载失败: ' + e.message;
   }
 }
 
 load();
-setInterval(load, 30000);
+setInterval(load, REFRESH_MS);
 </script>
 </body>
 </html>
