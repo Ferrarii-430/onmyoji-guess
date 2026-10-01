@@ -33,9 +33,12 @@ public class GuessQueryService {
     private static final long CACHE_TTL_MS = 15_000L;
 
     private static final String SQL_BETS = """
-            SELECT user_name, bet_side, raw_line, create_time
-            FROM guess_record WHERE round_date = ? AND round_no = ?
-            ORDER BY user_name, id
+            SELECT g.user_name, g.bet_side, g.raw_line, g.create_time,
+                   f.content_text, f.create_time AS feed_time
+            FROM guess_record g
+            LEFT JOIN feed f ON f.feed_id = g.feed_id
+            WHERE g.round_date = ? AND g.round_no = ?
+            ORDER BY g.user_name, g.id
             """;
 
     private static final String SQL_WIN_RATES = """
@@ -133,6 +136,7 @@ public class GuessQueryService {
             String side = rs.getString("bet_side");
             String rawLine = rs.getString("raw_line");
             Timestamp judgeTime = rs.getTimestamp("create_time");
+            Timestamp feedTime = rs.getTimestamp("feed_time");
             return new UserBet(
                     rs.getString("user_name"),
                     side,
@@ -140,7 +144,9 @@ public class GuessQueryService {
                     rawLine,
                     rawLine == null ? "AI" : "POST",
                     judgeTime == null ? null : judgeTime.toLocalDateTime().toString(),
-                    winSide == null ? null : winSide.equals(side));
+                    winSide == null ? null : winSide.equals(side),
+                    rs.getString("content_text"),
+                    feedTime == null ? null : feedTime.toLocalDateTime().toString());
         }, Date.valueOf(date), roundNo);
     }
 
