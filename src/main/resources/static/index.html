@@ -122,7 +122,7 @@
 <body>
 <div class="container">
   <h1>阴阳师对弈竞猜看板</h1>
-  <div class="subtitle">数据来源: 网易大神动态自动采集 + 游戏画面 OCR · 每 60 秒自动刷新</div>
+  <div class="subtitle">数据来源: 网易大神动态自动采集 · 每 60 秒自动刷新</div>
 
   <div class="round-card" id="roundCard">
     <div>
@@ -138,7 +138,7 @@
   </div>
 
   <div class="section">
-    <h2>当前对局式神数据（OCR 采集）</h2>
+    <h2>当前对局式神数据</h2>
     <div class="shiki-grid">
       <div class="shiki-card">
         <div class="shiki-title red">红方 (左)</div>
@@ -200,7 +200,7 @@ function renderContent(text, side) {
 /* 式神数据表格 */
 function shikiTable(units) {
   if (!units || units.length === 0) {
-    return '<div class="empty">暂无 OCR 数据, 等待采集上报…</div>';
+    return '<div class="empty">数据未采集</div>';
   }
   const rows = units.map(u =>
       '<tr>'

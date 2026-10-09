@@ -83,8 +83,7 @@ CREATE TABLE IF NOT EXISTS round_result
   COLLATE = utf8mb4_general_ci COMMENT = '对局赛果(胜方)';
 
 -- -----------------------------------------------------
--- 4. 对局式神数据表 (游戏画面 OCR 采集, 同局重复上报按最后一次覆盖)
---    所有属性值按 OCR 原样字符串保存, 不做数值转换
+-- 4. 对局式神数据表 (数据采集, 同局重复上报按最后一次覆盖)
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS guess_shikigami
 (
@@ -107,4 +106,4 @@ CREATE TABLE IF NOT EXISTS guess_shikigami
     UNIQUE KEY uk_round_side_no (round_date, round_no, side, no)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci COMMENT = '对局式神数据(OCR采集)';
+  COLLATE = utf8mb4_general_ci COMMENT = '对局式神数据';

@@ -24,7 +24,7 @@ public class Config {
             new AbstractMap.SimpleEntry<>("靠脸混饭", "e87f855f36f24b34b9d8f8a4fb2d62b2"),
             new AbstractMap.SimpleEntry<>("徐ok", "c3c989fae4074d04b478b8ba47ae4120"),
             new AbstractMap.SimpleEntry<>("徐清林", "21657a558bdd4ddfb6501298350336e7"),
-            new AbstractMap.SimpleEntry<>("就听好歌不说话", "6ab918118f8a3a2b0f019973"),
+            new AbstractMap.SimpleEntry<>("就听好歌不说话", "adf8c487c3e44c1ea6ac49f777820e14"),
             new AbstractMap.SimpleEntry<>("CC南浔", "74db771d92a54c28ae3e98d19aa565a3"),
             new AbstractMap.SimpleEntry<>("槐夏三十", "a9724e98c1cb4a4e931ebc3f467ea73d"),
             new AbstractMap.SimpleEntry<>("查查尔", "d9dc2a75497c4a91b2db1e909a36544d"),
