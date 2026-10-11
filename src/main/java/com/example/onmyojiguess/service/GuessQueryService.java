@@ -80,8 +80,8 @@ public class GuessQueryService {
      */
     public void setRoundResult(LocalDate roundDate, int roundNo, String winSide) {
         jdbcTemplate.update("""
-                        INSERT INTO round_result (round_date, round_no, win_side, source) VALUES (?, ?, ?, 'MANUAL') AS new
-                        ON DUPLICATE KEY UPDATE win_side = new.win_side, source = 'MANUAL', reporter = NULL
+                        INSERT INTO round_result (round_date, round_no, win_side, source) VALUES (?, ?, ?, 'MANUAL')
+                        ON DUPLICATE KEY UPDATE win_side = VALUES(win_side), source = 'MANUAL', reporter = NULL
                         """,
                 Date.valueOf(roundDate), roundNo, winSide);
         cache = null;

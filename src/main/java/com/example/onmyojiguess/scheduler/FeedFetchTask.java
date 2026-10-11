@@ -4,7 +4,7 @@ import com.example.onmyojiguess.config.Config;
 import com.example.onmyojiguess.model.AiVerdict;
 import com.example.onmyojiguess.model.FeedData;
 import com.example.onmyojiguess.model.RoundResultHint;
-import com.example.onmyojiguess.service.AiGuessJudgeService;
+import com.example.onmyojiguess.service.AiGuessJudge;
 import com.example.onmyojiguess.service.DsFeedClient;
 import com.example.onmyojiguess.service.FeedStorageService;
 import com.example.onmyojiguess.service.GuessQueryService;
@@ -52,7 +52,8 @@ public class FeedFetchTask {
 
     private final DsFeedClient dsFeedClient;
     private final FeedStorageService feedStorageService;
-    private final AiGuessJudgeService aiGuessJudgeService;
+    /** AI 判定实现由 app.ai.provider 决定: deepseek(默认) / startlux */
+    private final AiGuessJudge aiGuessJudge;
     private final GuessQueryService guessQueryService;
 
     /** 是否在应用启动完成后立即执行一次采集 */
@@ -133,7 +134,7 @@ public class FeedFetchTask {
                         .filter(f -> unjudgedIds.contains(f.getFeedId()))
                         .toList();
                 log.info("AI 兜底判定候选帖 {} 条", toJudge.size());
-                Map<String, AiVerdict> verdicts = aiGuessJudgeService.judge(toJudge);
+                Map<String, AiVerdict> verdicts = aiGuessJudge.judge(toJudge);
                 if (!verdicts.isEmpty()) {
                     feedStorageService.applyAiVerdicts(toJudge, verdicts);
                 }

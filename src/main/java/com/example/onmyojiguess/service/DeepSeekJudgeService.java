@@ -7,6 +7,7 @@ import com.example.onmyojiguess.model.AiVerdict;
 import com.example.onmyojiguess.model.FeedData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -14,7 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AI 兜底判定服务（DeepSeek V4.1-Flash，经 Spring AI OpenAI 兼容协议接入）
+ * DeepSeek 兜底判定实现（V4.1-Flash，经 Spring AI OpenAI 兼容协议接入）
+ * <p>
+ * app.ai.provider=deepseek (默认) 时生效。原 AiGuessJudgeService 逻辑原样保留。
  * <p>
  * 降低 token 消耗的手段：
  * 1. 仅本地规则无法判定、且含 红/蓝/左/右 关键字的候选帖才送 AI（调用方负责）
@@ -24,25 +27,26 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-public class AiGuessJudgeService {
+@ConditionalOnProperty(name = "app.ai.provider", havingValue = "deepseek", matchIfMissing = true)
+public class DeepSeekJudgeService implements AiGuessJudge {
 
     private static final int BATCH_SIZE = 10;
-    private static final int MAX_TEXT_LEN = 600;
+    private static final int MAX_TEXT_LEN = 300;
 
     private static final String SYSTEM_PROMPT = """
             你是"阴阳师对弈竞猜"押注帖判定器。每天10:00~24:00每2小时一局: 第1场=10点场, 第N场开始小时=8+2N。
             押注方向: 左(红)=RED, 右(蓝)=BLUE。
             判定规则:
-            1. is_bet=true: 帖子对某一局表达了押 RED 或 BLUE 的立场, 口语化表达(如"跟红/无脑蓝/冲红方/梭哈蓝/看好红方/继续红/全压蓝")也算。场次可能写时间(如18:00即第5场)或"第N场", 二者都没有时从上下文推断, 推断不出则填null。
-            2. is_bet=false: 纯赛果回顾(仅有"上局右(蓝)竞猜成功"而无对本局/下一局的押注)、纯胜率统计、纯闲聊、活动推广, 或通篇完全看不出红蓝立场者。
-            3. 混合帖: 帖子同时含上局回顾和对某局(本局/下一局/今晚等)的押注时, 按押注帖判定 is_bet=true, 不要因回顾内容而判否。
+            1. is_bet=true: 帖子明确表达了对某一局押 RED 或 BLUE, 场次可能写时间(如18:00即第5场)或"第N场", 也可能二者都没有(方向与局数从上下文推断, 推断不出则填null)。
+            2. is_bet=false: 赛果回顾(如"上局右(蓝)竞猜成功")、胜率统计、闲聊、活动推广, 或无法确定押注方向者。
             只输出JSON, 不要输出任何其他文字, 格式固定:
             {"results":[{"id":"帖子id原样返回","is_bet":true,"side":"RED或BLUE或null","round_no":1到7的整数或null}]}
+            is_bet为false时side和round_no均为null。
             """;
 
     private final ChatClient chatClient;
 
-    public AiGuessJudgeService(ChatClient.Builder chatClientBuilder) {
+    public DeepSeekJudgeService(ChatClient.Builder chatClientBuilder) {
         this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).build();
     }
 
@@ -51,6 +55,7 @@ public class AiGuessJudgeService {
      *
      * @return feedId -> 判定结果；AI 未返回的 feedId 不在 map 中（由调用方保持其未判定状态，下轮重试）
      */
+    @Override
     public Map<String, AiVerdict> judge(List<FeedData> candidates) {
         Map<String, AiVerdict> verdicts = new HashMap<>();
         for (int from = 0; from < candidates.size(); from += BATCH_SIZE) {
@@ -75,13 +80,8 @@ public class AiGuessJudgeService {
         StringBuilder sb = new StringBuilder("待判定帖子:\n");
         for (int i = 0; i < batch.size(); i++) {
             FeedData feed = batch.get(i);
-            // 换行压平为 " | ", 保留行结构, 避免相邻两行内容粘连干扰判定
-            String text = feed.getText() == null ? "" : feed.getText().replace("\r", "").replace("\n", " | ").trim();
-            if (text.length() > MAX_TEXT_LEN) {
-                text = text.substring(0, MAX_TEXT_LEN);
-            }
             sb.append("#").append(i + 1).append(" id=").append(feed.getFeedId()).append('\n')
-              .append(text);
+              .append(AiGuessJudge.prepareText(feed.getText(), MAX_TEXT_LEN));
             if (i < batch.size() - 1) {
                 sb.append("\n---\n");
             }

@@ -26,15 +26,16 @@ public class ShikigamiService {
     private static final String SIDE_RED = "RED";
     private static final String SIDE_BLUE = "BLUE";
 
+    // 注: 使用 VALUES() 而非 8.0.19+ 的行别名(AS new)语法, 兼容低版本 MySQL / MariaDB
     private static final String SQL_UPSERT = """
             INSERT INTO guess_shikigami
                 (round_date, round_no, side, no, name, attack, hp, defense, speed,
                  crit_rate, crit_damage, effect_hit, effect_resist, mitama)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) AS new
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                name = new.name, attack = new.attack, hp = new.hp, defense = new.defense,
-                speed = new.speed, crit_rate = new.crit_rate, crit_damage = new.crit_damage,
-                effect_hit = new.effect_hit, effect_resist = new.effect_resist, mitama = new.mitama
+                name = VALUES(name), attack = VALUES(attack), hp = VALUES(hp), defense = VALUES(defense),
+                speed = VALUES(speed), crit_rate = VALUES(crit_rate), crit_damage = VALUES(crit_damage),
+                effect_hit = VALUES(effect_hit), effect_resist = VALUES(effect_resist), mitama = VALUES(mitama)
             """;
 
     private static final String SQL_BY_ROUND = """

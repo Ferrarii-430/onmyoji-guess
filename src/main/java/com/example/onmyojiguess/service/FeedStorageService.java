@@ -34,23 +34,24 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class FeedStorageService {
 
+    // 注: 使用 VALUES() 而非 8.0.19+ 的行别名(AS new)语法, 兼容低版本 MySQL / MariaDB
     private static final String INSERT_FEED = """
             INSERT INTO feed (feed_id, user_name, uid, feed_type, content_text, ip_location, create_time, update_time, is_guess)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) AS new
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                feed_type = new.feed_type,
-                content_text = new.content_text,
-                ip_location = new.ip_location,
-                update_time = new.update_time,
-                is_guess = COALESCE(new.is_guess, feed.is_guess)
+                feed_type = VALUES(feed_type),
+                content_text = VALUES(content_text),
+                ip_location = VALUES(ip_location),
+                update_time = VALUES(update_time),
+                is_guess = COALESCE(VALUES(is_guess), is_guess)
             """;
 
     private static final String INSERT_GUESS = """
             INSERT INTO guess_record (feed_id, user_name, uid, round_date, round_no, round_start, bet_side, raw_line)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?) AS new
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
-                bet_side = new.bet_side,
-                raw_line = COALESCE(new.raw_line, guess_record.raw_line)
+                bet_side = VALUES(bet_side),
+                raw_line = COALESCE(VALUES(raw_line), raw_line)
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -135,9 +136,9 @@ public class FeedStorageService {
 
     private static final String UPSERT_ROUND_RESULT_MANUAL = """
             INSERT INTO round_result (round_date, round_no, win_side, source)
-            VALUES (?, ?, ?, 'MANUAL') AS new
+            VALUES (?, ?, ?, 'MANUAL')
             ON DUPLICATE KEY UPDATE
-                win_side = new.win_side,
+                win_side = VALUES(win_side),
                 source = 'MANUAL',
                 reporter = NULL
             """;
