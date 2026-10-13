@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * StartLux-Decision 类型化决策模型判定实现
@@ -41,25 +40,29 @@ import java.util.concurrent.ThreadLocalRandom;
 public class StartLuxJudgeService implements AiGuessJudge {
 
     private static final String DECIDE_PATH = "/v1/systemone";
-    /** 本地模型毫秒级响应, 请求间留少量间隔避免打满 */
-    private static final long REQUEST_GAP_MS = 200L;
-    /** 本地模型无 token 成本, 正文保留更长, 上限兜底 */
-    private static final int MAX_TEXT_LEN = 4000;
+    /** 相邻请求间隔 500ms (顺序执行, 不并发) */
+    private static final long REQUEST_GAP_MS = 500L;
     /** 相关性 noul 阈值: is_related 低于此值判为无关 */
     private static final double RELATED_THRESHOLD = 0.5;
     /** 方向建议 noul 阈值: has_side_choice 低于此值判为非押注贴 */
     private static final double SIDE_HINT_THRESHOLD = 0.5;
+
+    /** 正文截断上限, 全局配置 app.ai.max-text-len 对所有 AI 实现通用 */
+    private final int maxTextLen;
 
     private final RestClient restClient;
     private final double minConfidence;
 
     public StartLuxJudgeService(
             @Value("${app.ai.startlux.base-url:http://192.168.1.46:8090}") String baseUrl,
-            @Value("${app.ai.startlux.min-confidence:0.55}") double minConfidence) {
+            @Value("${app.ai.startlux.min-confidence:0.55}") double minConfidence,
+            @Value("${app.ai.max-text-len:3000}") int maxTextLen) {
         this.minConfidence = minConfidence;
+        this.maxTextLen = maxTextLen;
+        // 连接 10s / 读取 60s: 模型服务偶发繁忙时留足等待时间
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(30));
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(60));
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .requestFactory(factory)
@@ -79,7 +82,7 @@ public class StartLuxJudgeService implements AiGuessJudge {
                 String body = restClient.post()
                         .uri(DECIDE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(buildRequest(feed))
+                        .body(JSON.toJSONString(buildRequest(feed)))
                         .retrieve()
                         .body(String.class);
                 AiVerdict verdict = parse(feed.getFeedId(), body);
@@ -95,6 +98,10 @@ public class StartLuxJudgeService implements AiGuessJudge {
 
     /**
      * 组装类型化决策请求: state=正文, questions=相关性/方向建议/方向/场次
+     * <p>
+     * 注意: 请求体必须预先序列化为字符串再发送——直接传 Map 会走流式序列化,
+     * 请求体以 chunked 编码传输, 而 StartLux 服务的 Python BaseHTTPServer 只按
+     * Content-Length 读取, 会收到空 body 报 422 "Expecting value: char 0"。
      */
     private Map<String, Object> buildRequest(FeedData feed) {
         Map<String, Object> questions = new LinkedHashMap<>();
@@ -129,7 +136,7 @@ public class StartLuxJudgeService implements AiGuessJudge {
         questions.put("round", round);
 
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("state", AiGuessJudge.prepareText(feed.getText(), MAX_TEXT_LEN));
+        request.put("state", AiGuessJudge.prepareText(feed.getText(), maxTextLen));
         request.put("questions", questions);
         return request;
     }
@@ -221,7 +228,7 @@ public class StartLuxJudgeService implements AiGuessJudge {
 
     private void sleepGap() {
         try {
-            Thread.sleep(REQUEST_GAP_MS + ThreadLocalRandom.current().nextLong(REQUEST_GAP_MS));
+            Thread.sleep(REQUEST_GAP_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

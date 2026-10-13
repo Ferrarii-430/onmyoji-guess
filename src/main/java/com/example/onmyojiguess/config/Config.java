@@ -19,7 +19,7 @@ public class Config {
      * 网易大神 key: 用户昵称, value: 用户 uid
      */
     public static final Map<String, String> USER_KEY_DS = Stream.of(
-            new AbstractMap.SimpleEntry<>("面灵气喵", "462382f1127b46c5add1185d88f0ea40"),
+//            new AbstractMap.SimpleEntry<>("面灵气喵", "462382f1127b46c5add1185d88f0ea40"),
             new AbstractMap.SimpleEntry<>("七面相", "840742d60e4a43208605ae68ca8c3f64")
 //            new AbstractMap.SimpleEntry<>("靠脸混饭", "e87f855f36f24b34b9d8f8a4fb2d62b2"),
 //            new AbstractMap.SimpleEntry<>("徐ok", "c3c989fae4074d04b478b8ba47ae4120"),

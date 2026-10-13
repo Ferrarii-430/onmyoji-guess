@@ -7,6 +7,7 @@ import com.example.onmyojiguess.model.AiVerdict;
 import com.example.onmyojiguess.model.FeedData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -31,14 +32,37 @@ import java.util.Map;
 public class DeepSeekJudgeService implements AiGuessJudge {
 
     private static final int BATCH_SIZE = 10;
-    private static final int MAX_TEXT_LEN = 300;
+    /** 正文截断上限, 全局配置 app.ai.max-text-len 对所有 AI 实现通用 */
+    private final int maxTextLen;
 
+    /**
+     * 分步判定提示词 (参考 StartLux-Decision 的 is_related -> has_side_choice -> side -> round 阶梯过滤):
+     * 固定前缀可命中 DeepSeek 上下文缓存, 加长不显著增加成本。
+     */
     private static final String SYSTEM_PROMPT = """
-            你是"阴阳师对弈竞猜"押注帖判定器。每天10:00~24:00每2小时一局: 第1场=10点场, 第N场开始小时=8+2N。
+            你是"阴阳师对弈竞猜"押注帖判定器。每天10:00~24:00每2小时一局: 第1场=10点场、第2场=12点场……第7场=22点场(第N场开始小时=8+2N)。
             押注方向: 左(红)=RED, 右(蓝)=BLUE。
-            判定规则:
-            1. is_bet=true: 帖子明确表达了对某一局押 RED 或 BLUE, 场次可能写时间(如18:00即第5场)或"第N场", 也可能二者都没有(方向与局数从上下文推断, 推断不出则填null)。
-            2. is_bet=false: 赛果回顾(如"上局右(蓝)竞猜成功")、胜率统计、闲聊、活动推广, 或无法确定押注方向者。
+
+            对每个帖子按以下顺序分步判定, 任何一步不通过即 is_bet=false, 后续步骤不再考虑:
+            第1步 is_related: 内容是否与阴阳师对弈竞猜活动相关? 闲聊、其他游戏、活动推广、年度报告等无关内容 -> is_bet=false
+            第2步 has_side_choice: 是否包含对未来某局押左(红)或右(蓝)的建议、分析或预测?
+                 警惕这些陷阱——它们只是"提及"红蓝/结果, 不是押注建议 -> is_bet=false:
+                 - 赛果回顾: "上局 右(蓝)竞猜成功""昨晚蓝方赢了"
+                 - 历史战绩统计: "总战绩32胜17负, 总胜率65.3%""今天7胜0负"
+                 - 纯感想、致谢、求关注、闲聊
+            第3步 side: 按帖子表达的方向定 RED/BLUE, "押翻盘 左(红)""90%+"等附加文字不影响方向本身
+            第4步 round: 场次识别, 三种写法:
+                 - 时间: "18:00"即18点场=第5场, 14:00=第3场, 22:00=第7场
+                 - 序数: "第N场""今天第3场""第三场"直接给出场次
+                 - 均未出现: 从上下文推断, 推断不出填 null (round_no=null 不影响 is_bet=true)
+
+            判定示例:
+            - "【对弈竞猜体验服】最后一天 18:00 押翻盘 左(红)" -> is_bet=true, side=RED, round_no=5
+            - "第三场 右(蓝) 90%+" -> is_bet=true, side=BLUE, round_no=3
+            - "16:00 左(红) 上局 右(蓝)竞猜成功" -> is_bet=true, side=RED, round_no=4 (上局回顾不是本次押注)
+            - "7胜0负完美答卷 总胜率65.3% 死皮赖脸求关注" -> is_bet=false (战绩统计与感想)
+            - "【拾光回忆录】十周年年度报告 传送门..." -> is_bet=false (无关内容)
+
             只输出JSON, 不要输出任何其他文字, 格式固定:
             {"results":[{"id":"帖子id原样返回","is_bet":true,"side":"RED或BLUE或null","round_no":1到7的整数或null}]}
             is_bet为false时side和round_no均为null。
@@ -46,8 +70,11 @@ public class DeepSeekJudgeService implements AiGuessJudge {
 
     private final ChatClient chatClient;
 
-    public DeepSeekJudgeService(ChatClient.Builder chatClientBuilder) {
+    public DeepSeekJudgeService(
+            ChatClient.Builder chatClientBuilder,
+            @Value("${app.ai.max-text-len:3000}") int maxTextLen) {
         this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT).build();
+        this.maxTextLen = maxTextLen;
     }
 
     /**
@@ -81,7 +108,7 @@ public class DeepSeekJudgeService implements AiGuessJudge {
         for (int i = 0; i < batch.size(); i++) {
             FeedData feed = batch.get(i);
             sb.append("#").append(i + 1).append(" id=").append(feed.getFeedId()).append('\n')
-              .append(AiGuessJudge.prepareText(feed.getText(), MAX_TEXT_LEN));
+              .append(AiGuessJudge.prepareText(feed.getText(), maxTextLen));
             if (i < batch.size() - 1) {
                 sb.append("\n---\n");
             }
