@@ -2,13 +2,16 @@
 
 自动采集网易大神（ds.163.com）上竞猜博主的对弈竞猜动态，解析出每位用户在每一局的押注方向（左红 / 右蓝），提供胜率统计与可视化看板。
 
+### 在每年对弈竞猜开启时，可通过以下地址预览本项目
+**https://frp-hat.com:55740/**
+
 ## 功能特性
 
 - **脚本联动全自动录入**：配合 [onmyoji-script](https://github.com/Ferrarii-430/onmyoji-script) 脚本，使用其 **"系统方案 -- 对弈竞猜采集"**，即可实现对局式神数据的全自动 OCR 识别与录入（自动上报至本系统 `/api/guess/shikigami` 接口），无需任何人工操作
 - **定时采集**：按竞猜场次感知调度，每局最后一个小时的 4 个刻度抓取 13 位博主的最新动态，每天都会执行。
 - **本地规则优先**：正则解析 `HH:MM` / `第N场` + `左(红)` / `右(蓝)`，绝大多数帖子无需 AI
 - **AI 兜底判定**：仅对本地无法判定且含 红/蓝/左/右 关键字的候选帖调用 AI，默认使用 **StartLux-Decision** 本地决策模型，可切换 DeepSeek 云端模式
-  - **StartLux-Decision**（本地，默认）：类型化概率决策模型，单帖毫秒级推理，置信度阈值过滤
+  - **StartLux-Decision**（本地，默认）：类型化概率决策模型，单帖毫秒级推理，置信度阈值过滤。**需自行部署本地推理服务**（见 [鸣谢](#鸣谢)）
   - **DeepSeek**（V4.1-Flash，云端，可选）：OpenAI 兼容协议，10 帖/批，分步判定提示词
 - **去重入库**：`feed` 表按 `feed_id` 唯一去重，`guess_record` 按 `(feed_id, round_start)` 唯一去重，AI 判定结果随 `feed.is_guess` 持久化（每个 feed 最多送 AI 一次，重启不丢）
 - **赛果管理**：自动从"上局 右(蓝)竞猜成功"类赛果帖推断上一局胜方（AUTO 首条生效），支持手动录入修正（MANUAL 覆盖）
@@ -32,6 +35,7 @@
 1. **JDK 17**（注意：`JAVA_HOME` 需指向 JDK 17，否则 text block 语法编译报错）
 2. **MySQL 8.0**，应用启动时自动建库建表（`createDatabaseIfNotExist=true` + 幂等 `init.sql`）
 3. （仅 DeepSeek 模式）环境变量 `DEEPSEEK_API_KEY`
+4. （StartLux 模式，默认）**需自行部署** StartLux-Decision 本地推理服务，部署后将其地址填入 `app.ai.startlux.base-url`（详见 [鸣谢](#鸣谢)）
 
 ### 配置
 
@@ -186,3 +190,7 @@ src/main/resources/
 ├── db/init.sql                      # 建表脚本 (幂等)
 └── static/index.html                # 看板页面
 ```
+
+## 鸣谢
+
+- [StartLuxLabs/StartLux-Decision-v1](https://github.com/StartLuxLabs/StartLux-Decision-v1) — 本项目默认 AI 判定所使用的类型化决策模型。StartLux-Decision 通过 TypeSafe `/v1/systemone` 协议提供毫秒级、带校准概率的结构化决策能力，本项目基于其文本决策能力实现对押注帖的相关性、方向与场次的判定。该模型需用户**自行部署**本地推理服务。
